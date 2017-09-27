@@ -123,8 +123,8 @@ describe('winston-elasticsearch:', function() {
       bulkWriter.append("foo", "bar", {"hello" : "world"});
 
       bulkWriter.flush().catch((err) => {
-	bulkWriter.bulk.length.should.equal(4 * 2);
-	done();
+        bulkWriter.bulk.length.should.equal(4 * 2);
+        done();
       });
     });
 
@@ -139,8 +139,9 @@ describe('winston-elasticsearch:', function() {
       bulkWriter.append("foo", "bar", {"hello" : "world"});
 
       bulkWriter.flush().catch((err) => {
-	bulkWriter.bulk.length.should.equal(3 * 2);
-	done();
+        // Each append pushes two items
+        bulkWriter.bulk.length.should.equal(3 * 2);
+        done();
       });
     });
   });
