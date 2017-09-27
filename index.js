@@ -78,7 +78,8 @@ const Elasticsearch = function Elasticsearch(options) {
   this.bulkWriter = new BulkWriter(
     this.client,
     options.flushInterval,
-    options.waitForActiveShards
+    options.waitForActiveShards,
+    options.maxItemsAfterFlush
   );
   this.bulkWriter.start();
 

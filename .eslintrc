@@ -11,6 +11,7 @@
       "vars": "all", "args": "none" }
     ],
     "prefer-template": 0,
+    "prefer-destructuring": 0,
     "prefer-const": [2, {
       "destructuring": "any",
       "ignoreReadBeforeAssign": true

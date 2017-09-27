@@ -1,10 +1,11 @@
 const Promise = require('promise');
 const debug = require('debug')('bulk writer');
 
-const BulkWriter = function BulkWriter(client, interval, waitForActiveShards) {
+const BulkWriter = function BulkWriter(client, interval, waitForActiveShards, maxItemsAfterFlush) {
   this.client = client;
   this.interval = interval || 5000;
   this.waitForActiveShards = waitForActiveShards;
+  this.maxItemsAfterFlush = maxItemsAfterFlush || 10000;
 
   this.bulk = []; // bulk to be flushed
   this.running = false;
@@ -40,6 +41,7 @@ BulkWriter.prototype.tick = function tick() {
   if (!this.running) { return; }
   this.flush()
     .catch((e) => {
+      thiz.schedule();
       throw e;
     })
     .then(() => {
@@ -49,7 +51,6 @@ BulkWriter.prototype.tick = function tick() {
 
 BulkWriter.prototype.flush = function flush() {
   // write bulk to elasticsearch
-  const thiz = this;
   if (this.bulk.length === 0) {
     debug('nothing to flush');
 
@@ -58,7 +59,7 @@ BulkWriter.prototype.flush = function flush() {
     });
   }
 
-  const bulk = this.bulk.concat();
+  const bulk = this.bulk;
   this.bulk = [];
   debug('going to write', bulk);
   return this.client.bulk({
@@ -68,7 +69,11 @@ BulkWriter.prototype.flush = function flush() {
     type: this.type
   }).catch((e) => {
     // rollback this.bulk array
-    thiz.bulk = bulk.concat(thiz.bulk);
+    this.bulk = bulk.concat(this.bulk);
+    if (this.bulk.length > this.maxItemsAfterFlush) {
+      this.bulk = this.bulk.slice(0, this.maxItemsAfterFlush * 2);
+    }
+
     throw e;
   });
 };

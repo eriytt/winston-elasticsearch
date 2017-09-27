@@ -2,10 +2,11 @@ var util = require('util');
 var fs = require('fs');
 var should = require('should');
 var winston = require('winston');
-//var elasticsearch = require('elasticsearch');
+var elasticsearch = require('elasticsearch');
 
 require('../index');
 var defaultTransformer = require('../transformer');
+const BulkWriter = require('../bulk_writer');
 
 var logMessage = JSON.parse(fs.readFileSync('./test/request_logentry_1.json', 'utf8'));
 
@@ -106,6 +107,40 @@ describe('winston-elasticsearch:', function() {
         transports: [
           transport
         ]
+      });
+    });
+  });
+
+  describe('BulkWriter', function() {
+    it('should not retain all entries if unconfigured', function(done) {
+      this.timeout(40000);
+      var client = new elasticsearch.Client({});
+      var bulkWriter = new BulkWriter(client, 1, undefined, undefined);
+
+      bulkWriter.append("foo", "bar", {"hello" : "world"});
+      bulkWriter.append("foo", "bar", {"hello" : "world"});
+      bulkWriter.append("foo", "bar", {"hello" : "world"});
+      bulkWriter.append("foo", "bar", {"hello" : "world"});
+
+      bulkWriter.flush().catch((err) => {
+	bulkWriter.bulk.length.should.equal(4 * 2);
+	done();
+      });
+    });
+
+    it('should not retain more entries than it is configured', function(done) {
+      this.timeout(40000);
+      var client = new elasticsearch.Client({});
+      var bulkWriter = new BulkWriter(client, 1, undefined, 3);
+
+      bulkWriter.append("foo", "bar", {"hello" : "world"});
+      bulkWriter.append("foo", "bar", {"hello" : "world"});
+      bulkWriter.append("foo", "bar", {"hello" : "world"});
+      bulkWriter.append("foo", "bar", {"hello" : "world"});
+
+      bulkWriter.flush().catch((err) => {
+	bulkWriter.bulk.length.should.equal(3 * 2);
+	done();
       });
     });
   });
